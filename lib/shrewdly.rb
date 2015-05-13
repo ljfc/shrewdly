@@ -3,6 +3,12 @@ require 'httparty'
 class Shrewdly
   include HTTParty
 
+  class Error < StandardError
+  end
+
+  class HTTPFailureResponse < Error
+  end
+
   base_uri 'https://api.insight.ly/v2.1'
 
   attr_accessor :api_key
@@ -16,23 +22,34 @@ class Shrewdly
   # Basic utility function to perform GET requests against the API.
   #
   def get_with_auth(path, options = {})
-    Shrewdly.get(path, self.add_basic_auth(options))
+    puts "Insightly GET #{path}, #{options}"
+    response = Shrewdly.get(path, self.add_basic_auth(options))
+    puts "#{response.request.last_uri} => #{response.code} #{response.headers.content_type}"
+    if !response.success?
+      raise HTTPFailureResponse, response.response.inspect
+    end
+    return response
   end
 
   # Gets specific opportunities. Pass one or more opportunity ID numbers.
   #
-  def get_opportunities(ids)
+  def get_opportunities(ids_or_options)
     self.get_with_auth '/Opportunities',
       query: {
         ids: Array(ids).join(',') # The API is expecting a comma-separated list.
       }
   end
 
-  # Gets all opportunities. If there are more than 20k results then tags and links are not included.
+  # Makes a small request of some kind
   #
-  def get_all_opportunities
-    self.get_with_auth '/Opportunities'
+  def test_connection
+    self.get_with_auth '/Opportunities',
+      query: {
+        tag: 'Design',
+        '$top' => 1
+      }
   end
+
 
 protected
 
