@@ -82,6 +82,16 @@ class Shrewdly
     Opportunity.wrap self.get_with_auth('/Opportunities', options).parsed_response
   end
 
+  # Get opportunities changed more recently than a given datetime.
+  #
+  def get_opportunities_changed_since(point_in_time)
+    Opportunity.wrap self.get_with_auth('/Opportunities', {
+      query: {
+        '$filter' => ['DATE_UPDATED_UTC', 'gt', "DateTime'#{self.datetime_format(point_in_time)}'"].join(' ')
+      }
+    })
+  end
+
   # Makes a small request of some kind
   #
   def test_connection
@@ -94,6 +104,10 @@ class Shrewdly
 
 
 protected
+
+  def datetime_format(datetime)
+    datetime.strftime('%FT%T') # The Insightly API takes a not-quite-ISO8601-formatted datetime.
+  end
 
   def add_basic_auth(options)
     options[:basic_auth] = { username: self.api_key, password: '' }
