@@ -9,17 +9,17 @@ class Shrewdly
   class HTTPFailureResponse < Error
   end
 
-  class Opportunity
+  class InsightlyObject
     attr_accessor :data
 
-    def self.wrap(opportunities)
-      Array(opportunities).reduce([]) do |a, o|
-        a << Opportunity.new(o)
+    def self.wrap(insightly_objects)
+      Array(insightly_objects).reduce([]) do |a, insightly_object|
+        a << self.new(insightly_object)
       end
     end
 
-    def initialize(opportunity_data)
-      self.data = opportunity_data
+    def initialize(object_data)
+      self.data = object_data
     end
 
     def raw_data
@@ -27,24 +27,42 @@ class Shrewdly
     end
 
     # Most accessors will follow the same pattern, so generate them automatically.
-    [
+    def self.insightly_accessor(names)
+      Array(names).each do |k|
+        define_method(k) do
+          self.data.fetch(k.to_s.upcase)
+        end
+      end
+    end
+
+    # Datetime accessors follow a consistent pattern, so generate them automatically too.
+    def self.insightly_datetime_accessor(names)
+      Array(names).each do |k|
+        define_method(k) do
+          self.data.fetch(k.to_s.upcase).to_datetime
+        end
+      end
+    end
+  end
+
+  class Opportunity < InsightlyObject
+    insightly_accessor [
       :opportunity_id,
       :opportunity_name
-    ].each do |k|
-      define_method(k) do
-        self.data.fetch(k.to_s.upcase)
-      end
-    end
-
-    # Datetime accessors follow a consistent pattern, so generate the automatically too.
-    [
+    ]
+    insightly_datetime_accessor [
       :date_updated_utc
-    ].each do |k|
-      define_method(k) do
-        self.data.fetch(k.to_s.upcase).to_datetime
-      end
-    end
+    ]
+  end
 
+  class Project < InsightlyObject
+    insightly_accessor [
+      :project_id,
+      :project_name
+    ]
+    insightly_datetime_accessor [
+      :date_updated_utc
+    ]
   end
 
   base_uri 'https://api.insight.ly/v2.1'
