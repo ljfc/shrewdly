@@ -12,6 +12,19 @@ class Shrewdly
   class InsightlyObject
     attr_accessor :data
 
+    # Gets specific insightly objects. Pass one or more ID numbers.
+    #
+    def self.find_in_insightly(ids_or_options = {})
+      case ids_or_options
+      when Array, Fixnum
+        options = { query: { ids: Array(ids_or_options).join(',') } } # The API is expecting a comma-separated list.
+      when Hash
+        options = ids_or_options
+      end
+
+      self.wrap Shrewdly.get_with_auth("/#{self.name.split('::').last}", options).parsed_response
+    end
+
     def self.wrap(insightly_objects)
       Array(insightly_objects).reduce([]) do |a, insightly_object|
         a << self.new(insightly_object)
@@ -43,6 +56,7 @@ class Shrewdly
         end
       end
     end
+
   end
 
   class Opportunity < InsightlyObject
